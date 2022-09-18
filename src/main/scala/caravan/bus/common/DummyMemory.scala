@@ -7,18 +7,16 @@ import chisel3.util.experimental.loadMemoryFromFile
 
 
 //implicit parameters for Config, Request and Response
-class DummyMemController/*(programFile: Option[String])*/(implicit val config: BusConfig, implicit val request: AbstrRequest, implicit val response: AbstrResponse) extends Module {
-    val io = IO(new Bundle {
-        val req = Flipped(Decoupled(request))
-        val rsp = Decoupled(response)
-    })
+class DummyMemController/*(programFile: Option[String])*/(implicit val config: BusConfig, implicit val request: AbstrRequest, implicit val response: AbstrResponse) extends MultiIOModule {
+        val req = IO(Flipped(Decoupled(request)))
+        val rsp = IO(Decoupled(response))
 
     val validReg = RegInit(false.B)
     // val ackWriteReg = RegInit(false.B)
 
-    io.rsp.valid := validReg
-    io.rsp.bits.error := false.B
-    io.req.ready := true.B
+    rsp.valid := validReg
+    rsp.bits.error := false.B
+    req.ready := true.B
 
     // masked memory init
     val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
@@ -32,18 +30,18 @@ class DummyMemController/*(programFile: Option[String])*/(implicit val config: B
     // holds the bytes that must be read according to the activeByteLane
     val data = Wire(Vec(4,UInt(8.W)))
 
-    when(io.req.fire() && io.req.bits.isWrite){
+    when(req.fire() && req.bits.isWrite){
 
         
-        mem.write(io.req.bits.addrRequest/4.U, io.req.bits.dataRequest.asTypeOf(Vec(4,UInt(8.W))), io.req.bits.activeByteLane.asBools)
+        mem.write(req.bits.addrRequest/4.U, req.bits.dataRequest.asTypeOf(Vec(4,UInt(8.W))), req.bits.activeByteLane.asBools)
         rData map (_ := DontCare)
         validReg := true.B
         // ackWriteReg := true.B
 
 
-    }.elsewhen(io.req.fire() && !io.req.bits.isWrite){
+    }.elsewhen(req.fire() && !req.bits.isWrite){
          
-        rData := mem.read(io.req.bits.addrRequest/4.U)
+        rData := mem.read(req.bits.addrRequest/4.U)
         validReg := true.B
         // ackWriteReg := false.B
         
@@ -55,13 +53,13 @@ class DummyMemController/*(programFile: Option[String])*/(implicit val config: B
         
     }
 
-    data := io.req.bits.activeByteLane.asBools zip rData map {
+    data := req.bits.activeByteLane.asBools zip rData map {
         case (b:Bool, i:UInt) => Mux(b === true.B, i, 0.U)
     }
 
-    io.rsp.valid := validReg
-    io.rsp.bits.dataResponse := data.asUInt
-    // io.rsp.bits.ackWrite := ackWriteReg
+    rsp.valid := validReg
+    rsp.bits.dataResponse := data.asUInt
+    // rsp.bits.ackWrite := ackWriteReg
 
     
 

@@ -3,36 +3,34 @@ package caravan.bus.tilelink
 import chisel3._ 
 import chisel3.util._
 
-class TilelinkAdapter(implicit val config:TilelinkConfig) extends Module {
-    val io = IO(new Bundle{
+class TilelinkAdapter(implicit val config:TilelinkConfig) extends MultiIOModule {
 
         /*  MASTER SIDE  */
-        val reqIn =  Flipped(Decoupled(new TLRequest))
-        val rspOut = Decoupled(new TLResponse)
+        val reqIn =  IO(Flipped(Decoupled(new TLRequest)))
+        val rspOut = IO(Decoupled(new TLResponse))
 
         /*  SLAVE SIDE */
-        val reqOut = Decoupled(new TLRequest)
-        val rspIn = Flipped(Decoupled(new TLResponse))
-    })
-
+        val reqOut = IO(Decoupled(new TLRequest))
+        val rspIn = IO(Flipped(Decoupled(new TLResponse))
+)
     val tlHost = Module(new TilelinkHost)
     val tlSlave = Module(new TilelinkDevice)
 
     /*  Connecting Master Interconnects  */
-    tlHost.io.tlMasterTransmitter <> tlSlave.io.tlMasterReceiver
+    tlHost.tlMasterTransmitter <> tlSlave.tlMasterReceiver
 
     /*  Connecting Slave Interconnects  */
-    tlSlave.io.tlSlaveTransmitter <> tlHost.io.tlSlaveReceiver
+    tlSlave.tlSlaveTransmitter <> tlHost.tlSlaveReceiver
 
     /*  Sending Request in Master  */
-    tlHost.io.reqIn <> io.reqIn
+    tlHost.reqIn <> reqIn
 
     /*  Sending Response out from Master  */
-    io.rspOut <> tlHost.io.rspOut
+    rspOut <> tlHost.rspOut
 
     /*  Sending Request out from Slave  */
-    io.reqOut <> tlSlave.io.reqOut
+    reqOut <> tlSlave.reqOut
 
     /*  Sending Response in Slave  */
-    tlSlave.io.rspIn <> io.rspIn
+    tlSlave.rspIn <> rspIn
 }

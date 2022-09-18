@@ -6,12 +6,10 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class TilelinkHost(implicit val config: TilelinkConfig) extends HostAdapter with OpCodes {
-    val io = IO(new Bundle {
-        val tlMasterTransmitter = Decoupled(new TilelinkMaster())
-        val tlSlaveReceiver  = Flipped(Decoupled(new TilelinkSlave()))
-        val reqIn = Flipped(Decoupled(new TLRequest()))
-        val rspOut = Decoupled(new TLResponse())
-    })
+        val tlMasterTransmitter = IO(Decoupled(new TilelinkMaster()))
+        val tlSlaveReceiver  = IO(Flipped(Decoupled(new TilelinkSlave())))
+        val reqIn = IO(Flipped(Decoupled(new TLRequest())))
+        val rspOut = IO(Decoupled(new TLResponse()))
 
 
     //FSM for indicating valid response only when the response comes.
@@ -21,7 +19,7 @@ class TilelinkHost(implicit val config: TilelinkConfig) extends HostAdapter with
     // val respReg = RegInit(false.B)
     // val readyReg = RegInit(true.B)
     dontTouch(stateReg)
-    dontTouch(io.reqIn.valid)
+    dontTouch(reqIn.valid)
     // when(fire) {
     //     readyReg := false.B
     // }
@@ -29,118 +27,118 @@ class TilelinkHost(implicit val config: TilelinkConfig) extends HostAdapter with
     //     readyReg := true.B
     // }
 
-    io.tlSlaveReceiver.ready    := false.B
-    io.reqIn.ready              := true.B
+    tlSlaveReceiver.ready    := false.B
+    reqIn.ready              := true.B
 
 
-    // io.rspOut.bits.dataResponse := io.tlSlaveReceiver.bits.d_data  
-    // io.rspOut.bits.error        := io.tlSlaveReceiver.bits.d_denied
-    // io.rspOut.bits.ackWrite     := io.tlSlaveReceiver.bits.d_opcode === AccessAckData.U
+    // rspOut.bits.dataResponse := tlSlaveReceiver.bits.d_data  
+    // rspOut.bits.error        := tlSlaveReceiver.bits.d_denied
+    // rspOut.bits.ackWrite     := tlSlaveReceiver.bits.d_opcode === AccessAckData.U
 
-    io.tlMasterTransmitter.bits.a_opcode    := 0.U
-    io.tlMasterTransmitter.bits.a_data      := 0.U
-    io.tlMasterTransmitter.bits.a_address   := addrReg
-    io.tlMasterTransmitter.bits.a_param     := 0.U
-    io.tlMasterTransmitter.bits.a_source    := 0.U
-    io.tlMasterTransmitter.bits.a_size      := 0.U
-    io.tlMasterTransmitter.bits.a_mask      := 0.U
-    io.tlMasterTransmitter.bits.a_corrupt   := 0.U
-    io.tlMasterTransmitter.valid            := 0.U
+    tlMasterTransmitter.bits.a_opcode    := 0.U
+    tlMasterTransmitter.bits.a_data      := 0.U
+    tlMasterTransmitter.bits.a_address   := addrReg
+    tlMasterTransmitter.bits.a_param     := 0.U
+    tlMasterTransmitter.bits.a_source    := 0.U
+    tlMasterTransmitter.bits.a_size      := 0.U
+    tlMasterTransmitter.bits.a_mask      := 0.U
+    tlMasterTransmitter.bits.a_corrupt   := 0.U
+    tlMasterTransmitter.valid            := 0.U
 
-    io.rspOut.bits.dataResponse             := 0.U  
-    io.rspOut.bits.error                    := 0.U
-    // io.rspOut.bits.ackWrite                 := 0.U
-    io.rspOut.valid                         := false.B
+    rspOut.bits.dataResponse             := 0.U  
+    rspOut.bits.error                    := 0.U
+    // rspOut.bits.ackWrite                 := 0.U
+    rspOut.valid                         := false.B
 
 
     when(stateReg === idle){
-        // stateReg := Mux(io.reqIn.valid, process_data, idle)
+        // stateReg := Mux(reqIn.valid, process_data, idle)
     // }.elsewhen(stateReg === process_data){
 
-        when(io.reqIn.valid){
+        when(reqIn.valid){
 
-            io.tlMasterTransmitter.bits.a_opcode    := Mux(io.reqIn.bits.isWrite, Mux(io.reqIn.bits.activeByteLane === "b1111".U, PutFullData.U, PutPartialData.U) , Get.U)/*, 2.U)*/
-            io.tlMasterTransmitter.bits.a_data      := io.reqIn.bits.dataRequest
-            io.tlMasterTransmitter.bits.a_address   := io.reqIn.bits.addrRequest
-            io.tlMasterTransmitter.bits.a_param     := 0.U
-            io.tlMasterTransmitter.bits.a_source    := 2.U 
-            io.tlMasterTransmitter.bits.a_size      := MuxLookup(config.w.U, 2.U,Array(                    // default 32-bit
+            tlMasterTransmitter.bits.a_opcode    := Mux(reqIn.bits.isWrite, Mux(reqIn.bits.activeByteLane === "b1111".U, PutFullData.U, PutPartialData.U) , Get.U)/*, 2.U)*/
+            tlMasterTransmitter.bits.a_data      := reqIn.bits.dataRequest
+            tlMasterTransmitter.bits.a_address   := reqIn.bits.addrRequest
+            tlMasterTransmitter.bits.a_param     := 0.U
+            tlMasterTransmitter.bits.a_source    := 2.U 
+            tlMasterTransmitter.bits.a_size      := MuxLookup(config.w.U, 2.U,Array(                    // default 32-bit
                                                                                     (1.U) -> 0.U,
                                                                                     (2.U) -> 1.U,
                                                                                     (4.U) -> 2.U,
                                                                                     (8.U) -> 3.U
                                                                                 ))
-            io.tlMasterTransmitter.bits.a_mask      := io.reqIn.bits.activeByteLane
-            io.tlMasterTransmitter.bits.a_corrupt   := false.B
-            io.tlMasterTransmitter.valid            := io.reqIn.valid
+            tlMasterTransmitter.bits.a_mask      := reqIn.bits.activeByteLane
+            tlMasterTransmitter.bits.a_corrupt   := false.B
+            tlMasterTransmitter.valid            := reqIn.valid
 
             stateReg := wait_for_resp
-            io.tlSlaveReceiver.ready := true.B 
-            addrReg := io.reqIn.bits.addrRequest
+            tlSlaveReceiver.ready := true.B 
+            addrReg := reqIn.bits.addrRequest
 
         }
 
         
     }.elsewhen(stateReg === wait_for_resp){
 
-        io.tlSlaveReceiver.ready := true.B
-        io.reqIn.ready           := false.B
+        tlSlaveReceiver.ready := true.B
+        reqIn.ready           := false.B
 
-        when(io.tlSlaveReceiver.valid){
+        when(tlSlaveReceiver.valid){
 
-            io.rspOut.bits.dataResponse := io.tlSlaveReceiver.bits.d_data  
-            io.rspOut.bits.error := io.tlSlaveReceiver.bits.d_denied
-            // io.rspOut.bits.ackWrite := io.tlSlaveReceiver.bits.d_opcode === AccessAckData.U
-            io.rspOut.valid := io.tlSlaveReceiver.valid
+            rspOut.bits.dataResponse := tlSlaveReceiver.bits.d_data  
+            rspOut.bits.error := tlSlaveReceiver.bits.d_denied
+            // rspOut.bits.ackWrite := tlSlaveReceiver.bits.d_opcode === AccessAckData.U
+            rspOut.valid := tlSlaveReceiver.valid
             stateReg := idle
 
         }
 
     }
 
-    // io.tlSlaveReceiver.ready := true.B
-    // io.reqIn.ready := true.B
+    // tlSlaveReceiver.ready := true.B
+    // reqIn.ready := true.B
 
 
-    // when(io.reqIn.valid){
-        // io.tlMasterTransmitter.bits.a_opcode := /*Mux(readyReg,*/ Mux(io.reqIn.bits.isWrite, Mux(io.reqIn.bits.activeByteLane === "b1111".U, PutFullData.U, PutPartialData.U) , Get.U)/*, 2.U)*/
-        // io.tlMasterTransmitter.bits.a_data := io.reqIn.bits.dataRequest
-        // io.tlMasterTransmitter.bits.a_address := io.reqIn.bits.addrRequest
-        // io.tlMasterTransmitter.bits.a_param := 0.U
-        // io.tlMasterTransmitter.bits.a_source := 2.U 
-        // io.tlMasterTransmitter.bits.a_size := MuxLookup(config.w.U, 2.U,Array(                    // default 32-bit
+    // when(reqIn.valid){
+        // tlMasterTransmitter.bits.a_opcode := /*Mux(readyReg,*/ Mux(reqIn.bits.isWrite, Mux(reqIn.bits.activeByteLane === "b1111".U, PutFullData.U, PutPartialData.U) , Get.U)/*, 2.U)*/
+        // tlMasterTransmitter.bits.a_data := reqIn.bits.dataRequest
+        // tlMasterTransmitter.bits.a_address := reqIn.bits.addrRequest
+        // tlMasterTransmitter.bits.a_param := 0.U
+        // tlMasterTransmitter.bits.a_source := 2.U 
+        // tlMasterTransmitter.bits.a_size := MuxLookup(config.w.U, 2.U,Array(                    // default 32-bit
         //                                                                         (1.U) -> 0.U,
         //                                                                         (2.U) -> 1.U,
         //                                                                         (4.U) -> 2.U,
         //                                                                         (8.U) -> 3.U
         //                                                                     ))
-        // io.tlMasterTransmitter.bits.a_mask := io.reqIn.bits.activeByteLane
-        // io.tlMasterTransmitter.bits.a_corrupt := false.B
-        // io.tlMasterTransmitter.valid := io.reqIn.valid
+        // tlMasterTransmitter.bits.a_mask := reqIn.bits.activeByteLane
+        // tlMasterTransmitter.bits.a_corrupt := false.B
+        // tlMasterTransmitter.valid := reqIn.valid
 
     // } otherwise {
-    //     io.tlMasterTransmitter.bits.a_opcode := 2.U         // 2 is used for DontCare
-    //     io.tlMasterTransmitter.bits.a_data := DontCare
-    //     io.tlMasterTransmitter.bits.a_address := DontCare
-    //     io.tlMasterTransmitter.bits.a_param := DontCare
-    //     io.tlMasterTransmitter.bits.a_source := DontCare
-    //     io.tlMasterTransmitter.bits.a_size := DontCare
-    //     io.tlMasterTransmitter.bits.a_mask := DontCare
-    //     io.tlMasterTransmitter.bits.a_corrupt := DontCare
-    //     io.tlMasterTransmitter.valid := false.B
+    //     tlMasterTransmitter.bits.a_opcode := 2.U         // 2 is used for DontCare
+    //     tlMasterTransmitter.bits.a_data := DontCare
+    //     tlMasterTransmitter.bits.a_address := DontCare
+    //     tlMasterTransmitter.bits.a_param := DontCare
+    //     tlMasterTransmitter.bits.a_source := DontCare
+    //     tlMasterTransmitter.bits.a_size := DontCare
+    //     tlMasterTransmitter.bits.a_mask := DontCare
+    //     tlMasterTransmitter.bits.a_corrupt := DontCare
+    //     tlMasterTransmitter.valid := false.B
     // }
 
     // response is valid when either acknowledment or error is coming back.
     // respReg := MuxCase(false.B,Array(
-    //     ((io.tlSlaveReceiver.bits.d_opcode === AccessAck.U || io.tlSlaveReceiver.bits.d_opcode === AccessAckData.U) && !io.tlSlaveReceiver.bits.d_denied) -> true.B,
-    //     (io.tlSlaveReceiver.bits.d_denied & io.tlSlaveReceiver.valid) -> true.B,
+    //     ((tlSlaveReceiver.bits.d_opcode === AccessAck.U || tlSlaveReceiver.bits.d_opcode === AccessAckData.U) && !tlSlaveReceiver.bits.d_denied) -> true.B,
+    //     (tlSlaveReceiver.bits.d_denied & tlSlaveReceiver.valid) -> true.B,
     // ))
     
 
     // when(stateReg === idle){
     //     stateReg := Mux(
-    //         (io.tlSlaveReceiver.bits.d_denied |
-    //         (io.tlSlaveReceiver.bits.d_opcode === AccessAck.U || io.tlSlaveReceiver.bits.d_opcode === AccessAckData.U)),
+    //         (tlSlaveReceiver.bits.d_denied |
+    //         (tlSlaveReceiver.bits.d_opcode === AccessAck.U || tlSlaveReceiver.bits.d_opcode === AccessAckData.U)),
     //         latch_data,
     //         idle
     //     )

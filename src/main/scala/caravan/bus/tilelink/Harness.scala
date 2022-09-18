@@ -7,8 +7,7 @@ import chisel3.util.{Cat, Decoupled, MuxLookup}
 import chisel3.util.experimental.loadMemoryFromFile
 
 
-class Harness/*(programFile: Option[String])*/(implicit val config: TilelinkConfig) extends Module {
-  val io = IO(new Bundle {
+class Harness/*(programFile: Option[String])*/(implicit val config: TilelinkConfig) extends MultiIOModule {
     val valid = Input(Bool())
     val addrReq = Input(UInt(config.a.W))
     val dataReq = Input(UInt((config.w * 8).W))
@@ -18,7 +17,6 @@ class Harness/*(programFile: Option[String])*/(implicit val config: TilelinkConf
     val validResp = Output(Bool())
     val dataResp = Output(UInt(32.W))
     // val ackResp = Output(Bool())
-  })
 
   implicit val request = new TLRequest()    
   implicit val response = new TLResponse()
@@ -27,25 +25,25 @@ class Harness/*(programFile: Option[String])*/(implicit val config: TilelinkConf
   val tlSlave = Module(new TilelinkDevice())
   val memCtrl = Module(new DummyMemController())
 
-  tlHost.io.rspOut.ready := true.B  // IP always ready to accept data from wb host
+  tlHost.rspOut.ready := true.B  // IP always ready to accept data from wb host
 
-  tlHost.io.tlMasterTransmitter <> tlSlave.io.tlMasterReceiver
-  tlSlave.io.tlSlaveTransmitter <> tlHost.io.tlSlaveReceiver
+  tlHost.tlMasterTransmitter <> tlSlave.tlMasterReceiver
+  tlSlave.tlSlaveTransmitter <> tlHost.tlSlaveReceiver
 
-  tlHost.io.reqIn.valid := Mux(tlHost.io.reqIn.ready, io.valid, false.B)
-  tlHost.io.reqIn.bits.addrRequest := io.addrReq
-  tlHost.io.reqIn.bits.dataRequest := io.dataReq
-  tlHost.io.reqIn.bits.activeByteLane := io.byteLane
-  tlHost.io.reqIn.bits.isWrite := io.isWrite
+  tlHost.reqIn.valid := Mux(tlHost.reqIn.ready, valid, false.B)
+  tlHost.reqIn.bits.addrRequest := addrReq
+  tlHost.reqIn.bits.dataRequest := dataReq
+  tlHost.reqIn.bits.activeByteLane := byteLane
+  tlHost.reqIn.bits.isWrite := isWrite
   
 
 
-  tlSlave.io.reqOut <> memCtrl.io.req
-  tlSlave.io.rspIn <> memCtrl.io.rsp
+  tlSlave.reqOut <> memCtrl.req
+  tlSlave.rspIn <> memCtrl.rsp
 
-  io.dataResp := tlHost.io.rspOut.bits.dataResponse
-  io.validResp := tlHost.io.rspOut.valid
-  // io.ackResp := tlHost.io.rspOut.bits.ackWrite
+  dataResp := tlHost.rspOut.bits.dataResponse
+  validResp := tlHost.rspOut.valid
+  // io.ackResp := tlHost.rspOut.bits.ackWrite
 
 }
 
