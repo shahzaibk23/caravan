@@ -2,13 +2,13 @@ package caravan.bus.common
 import caravan.bus.wishbone.{WBDevice, WBHost, WishboneConfig, WishboneMaster, WishboneSlave}
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{Decoupled, log2Ceil}
+import chisel3.util.{log2Ceil}
 
 class Switch1toN[A <: BusHost, B <: BusDevice](mb: A, sb: B, N: Int) extends MultiIOModule {
-    val hostIn = IO(Flipped(Decoupled(mb)))
-    val hostOut = IO(Decoupled(sb))
-    val devOut = IO(Vec(N+1, Decoupled(mb)))  // creating 1 extra to connect error device
-    val devIn = IO(Flipped(Vec(N+1, Decoupled(sb))))  // creating 1 extra to connect error device
+    val hostIn = IO(Flipped(DecoupledMulti(mb)))
+    val hostOut = IO(DecoupledMulti(sb))
+    val devOut = IO(Vec(N+1, DecoupledMulti(mb)))  // creating 1 extra to connect error device
+    val devIn = IO(Flipped(Vec(N+1, DecoupledMulti(sb))))  // creating 1 extra to connect error device
     val devSel = IO(Input(UInt(log2Ceil(N + 1).W)))
 
   /** FIXME: assuming the socket is always ready to accept data from the bus host */

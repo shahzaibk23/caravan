@@ -6,12 +6,12 @@ import chisel3.util._
 class TilelinkAdapter(implicit val config:TilelinkConfig) extends MultiIOModule {
 
         /*  MASTER SIDE  */
-        val reqIn =  IO(Flipped(Decoupled(new TLRequest)))
-        val rspOut = IO(Decoupled(new TLResponse))
+        val reqIn =  IO(Flipped(DecoupledMulti(new TLRequest)))
+        val rspOut = IO(DecoupledMulti(new TLResponse))
 
         /*  SLAVE SIDE */
-        val reqOut = IO(Decoupled(new TLRequest))
-        val rspIn = IO(Flipped(Decoupled(new TLResponse))
+        val reqOut = IO(DecoupledMulti(new TLRequest))
+        val rspIn = IO(Flipped(DecoupledMulti(new TLResponse))
 )
     val tlHost = Module(new TilelinkHost)
     val tlSlave = Module(new TilelinkDevice)

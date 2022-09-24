@@ -2,14 +2,14 @@ package caravan.bus.common
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.stage.ChiselStage
-import chisel3.util.{Cat, Decoupled, MuxLookup}
+import chisel3.util.{Cat, MuxLookup}
 import chisel3.util.experimental.loadMemoryFromFile
 
 
 //implicit parameters for Config, Request and Response
 class DummyMemController/*(programFile: Option[String])*/(implicit val config: BusConfig, implicit val request: AbstrRequest, implicit val response: AbstrResponse) extends MultiIOModule {
-        val req = IO(Flipped(Decoupled(request)))
-        val rsp = IO(Decoupled(response))
+        val req = IO(Flipped(DecoupledMulti(request)))
+        val rsp = IO(DecoupledMulti(response))
 
     val validReg = RegInit(false.B)
     // val ackWriteReg = RegInit(false.B)

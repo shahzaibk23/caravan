@@ -1,13 +1,13 @@
 package caravan.bus.tilelink
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{Decoupled, Fill}
+import chisel3.util.{ Fill}
 // import caravan.bus.common.DeviceAdapter
 
 abstract class TLErr extends MultiIOModule
 class TilelinkError(implicit val config: TilelinkConfig) extends TLErr {
-    val tlSlaveTransmitter = IO(Decoupled(new TilelinkSlave()))
-    val tlMasterReceiver = IO(Flipped(Decoupled(new TilelinkMaster())))
+    val tlSlaveTransmitter = IO(DecoupledMulti(new TilelinkSlave()))
+    val tlMasterReceiver = IO(Flipped(DecoupledMulti(new TilelinkMaster())))
 
   // def fire(): Bool = tlMasterReceiver.valid && tlMasterReceiver.bits.cyc && tlMasterReceiver.bits.stb
 

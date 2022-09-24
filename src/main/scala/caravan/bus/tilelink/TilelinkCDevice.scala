@@ -5,12 +5,12 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class TilelinkCDevice(implicit val config: TilelinkConfig) extends DeviceAdapter with OpCodes {
-        val tlSlaveTransmitter = IO(Decoupled(new TilelinkSlave()))
-        val tlMasterReceiver = IO(Flipped(Decoupled(new TilelinkMaster())))
-        val reqOut = IO(Decoupled(new TLRequest()))
-        val rspIn = IO(Flipped(Decoupled(new TLResponse())))
+        val tlSlaveTransmitter = IO(DecoupledMulti(new TilelinkSlave()))
+        val tlMasterReceiver = IO(Flipped(DecoupledMulti(new TilelinkMaster())))
+        val reqOut = IO(DecoupledMulti(new TLRequest()))
+        val rspIn = IO(Flipped(DecoupledMulti(new TLResponse())))
 
-        // val tlAckReceiver = Flipped(Decoupled(new channelEBundle))
+        // val tlAckReceiver = Flipped(DecoupledMulti(new channelEBundle))
 
 
     val idle :: wait_for_resp :: Nil = Enum(2)

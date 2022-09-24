@@ -6,10 +6,10 @@ import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class TilelinkHost(implicit val config: TilelinkConfig) extends HostAdapter with OpCodes {
-        val tlMasterTransmitter = IO(Decoupled(new TilelinkMaster()))
-        val tlSlaveReceiver  = IO(Flipped(Decoupled(new TilelinkSlave())))
-        val reqIn = IO(Flipped(Decoupled(new TLRequest())))
-        val rspOut = IO(Decoupled(new TLResponse()))
+        val tlMasterTransmitter = IO(DecoupledMulti(new TilelinkMaster()))
+        val tlSlaveReceiver  = IO(Flipped(DecoupledMulti(new TilelinkSlave())))
+        val reqIn = IO(Flipped(DecoupledMulti(new TLRequest())))
+        val rspOut = IO(DecoupledMulti(new TLResponse()))
 
 
     //FSM for indicating valid response only when the response comes.
