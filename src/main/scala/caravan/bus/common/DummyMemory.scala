@@ -4,7 +4,7 @@ import chisel3.experimental.ChiselEnum
 import chisel3.stage.ChiselStage
 import chisel3.util.{Cat, MuxLookup}
 import chisel3.util.experimental.loadMemoryFromFile
-
+import caravan.bus.common.DecoupledMulti
 
 //implicit parameters for Config, Request and Response
 class DummyMemController/*(programFile: Option[String])*/(implicit val config: BusConfig, implicit val request: AbstrRequest, implicit val response: AbstrResponse) extends MultiIOModule {

@@ -3,6 +3,7 @@ import caravan.bus.wishbone.{WBDevice, WBHost, WishboneConfig, WishboneMaster, W
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util.{log2Ceil}
+import caravan.bus.common.DecoupledMulti
 
 class Switch1toN[A <: BusHost, B <: BusDevice](mb: A, sb: B, N: Int) extends MultiIOModule {
     val hostIn = IO(Flipped(DecoupledMulti(mb)))
