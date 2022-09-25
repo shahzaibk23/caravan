@@ -5,10 +5,10 @@ import chisel3.stage.ChiselStage
 import chisel3.util.{log2Ceil}
 
 class Switch1toN[A <: BusHost, B <: BusDevice](mb: A, sb: B, N: Int) extends MultiIOModule {
-    val hostIn = Module(Flipped(DecoupledMulti(mb)))
-    val hostOut = Module(DecoupledMulti(sb))
-    val devOut = Module(Vec(N+1, DecoupledMulti(mb)))  // creating 1 extra to connect error device
-    val devIn = Module(Flipped(Vec(N+1, DecoupledMulti(sb))))  // creating 1 extra to connect error device
+    val hostIn = Module(Flipped(new DecoupledMulti(mb)))
+    val hostOut = Module(new DecoupledMulti(sb))
+    val devOut = Module(Vec(N+1, new DecoupledMulti(mb)))  // creating 1 extra to connect error device
+    val devIn = Module(Flipped(Vec(N+1, new DecoupledMulti(sb))))  // creating 1 extra to connect error device
     val devSel = IO(Input(UInt(log2Ceil(N + 1).W)))
 
   /** FIXME: assuming the socket is always ready to accept data from the bus host */

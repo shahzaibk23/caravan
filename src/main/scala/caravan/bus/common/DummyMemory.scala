@@ -7,8 +7,8 @@ import chisel3.util.experimental.loadMemoryFromFile
 
 //implicit parameters for Config, Request and Response
 class DummyMemController/*(programFile: Option[String])*/(implicit val config: BusConfig, implicit val request: AbstrRequest, implicit val response: AbstrResponse) extends MultiIOModule {
-        val req = Module(Flipped(DecoupledMulti(request)))
-        val rsp = Module(DecoupledMulti(response))
+        val req = Module(Flipped(new DecoupledMulti(request)))
+        val rsp = Module(new DecoupledMulti(response))
 
     val validReg = RegInit(false.B)
     // val ackWriteReg = RegInit(false.B)
